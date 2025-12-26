@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron Configuration Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        .mono-font {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        /* Superscript styling for the preview */
+        .config-preview sup {
+            color: #2563eb; /* Blue color for electrons to make them pop */
+            font-weight: bold;
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
+        
+        <!-- Header -->
+        <div class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-2xl font-bold">Electron Configuration Mastery</h1>
+            <p class="text-blue-100 text-sm mt-1">Elements 1 - 20 | Random Review</p>
+        </div>
+
+        <div class="p-8">
+            
+            <!-- Element Display -->
+            <div class="flex flex-col items-center justify-center mb-8">
+                <div class="w-32 h-32 bg-gray-50 border-4 border-blue-500 rounded-xl flex flex-col items-center justify-center shadow-inner relative">
+                    <span class="absolute top-2 left-3 text-sm font-bold text-gray-500" id="atomic-number">Z=1</span>
+                    <span class="text-5xl font-extrabold text-gray-800" id="element-symbol">H</span>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700 mt-4" id="element-name">Hydrogen</h2>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-6">
+                
+                <!-- Full Config -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Full Configuration</label>
+                    <div class="relative">
+                        <input type="text" id="input-full" 
+                            class="mono-font w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-lg"
+                            placeholder="Type numbers normally (e.g. 1s2)..." autocomplete="off">
+                    </div>
+                    <!-- Live Preview Area -->
+                    <div id="preview-full" class="config-preview mt-2 h-8 text-lg text-gray-600 font-serif tracking-wide pl-4 border-l-4 border-blue-200 min-h-[1.5rem]">
+                        <!-- Preview appears here -->
+                    </div>
+                </div>
+
+                <!-- Shorthand Config -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Noble Gas (Shorthand) Notation</label>
+                    <div class="relative">
+                        <input type="text" id="input-short" 
+                            class="mono-font w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-lg"
+                            placeholder="Type numbers normally (e.g. [He] 2s1)..." autocomplete="off">
+                    </div>
+                    <!-- Live Preview Area -->
+                    <div id="preview-short" class="config-preview mt-2 h-8 text-lg text-gray-600 font-serif tracking-wide pl-4 border-l-4 border-blue-200 min-h-[1.5rem]">
+                        <!-- Preview appears here -->
+                    </div>
+                </div>
+
+                <!-- Feedback Area -->
+                <div id="feedback-area" class="hidden p-4 rounded-lg bg-gray-100 text-center text-lg config-preview">
+                    <!-- Feedback text injected here -->
+                </div>
+
+            </div>
+
+            <!-- Controls -->
+            <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="checkAnswer()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md">
+                    Check Answer
+                </button>
+                <button onclick="nextElement()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md">
+                    Next Element
+                </button>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <button onclick="showAnswer()" class="text-gray-400 hover:text-gray-600 text-sm font-medium underline">
+                    Stuck? Show Answer
+                </button>
+            </div>
+
+        </div>
+        
+        <!-- Footer / Stats -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between text-sm text-gray-500 font-mono">
+            <span>Streak: <span id="streak-count" class="font-bold text-blue-600">0</span></span>
+            <span>Status: <span id="status-text">Waiting</span></span>
+        </div>
+    </div>
+
+    <script>
+        // --- Data: Elements 1-20 ---
+        const elementData = [
+            { z: 1, sym: "H", name: "Hydrogen", full: "1s1", short: "1s1" },
+            { z: 2, sym: "He", name: "Helium", full: "1s2", short: "1s2" },
+            { z: 3, sym: "Li", name: "Lithium", full: "1s2 2s1", short: "[He] 2s1" },
+            { z: 4, sym: "Be", name: "Beryllium", full: "1s2 2s2", short: "[He] 2s2" },
+            { z: 5, sym: "B", name: "Boron", full: "1s2 2s2 2p1", short: "[He] 2s2 2p1" },
+            { z: 6, sym: "C", name: "Carbon", full: "1s2 2s2 2p2", short: "[He] 2s2 2p2" },
+            { z: 7, sym: "N", name: "Nitrogen", full: "1s2 2s2 2p3", short: "[He] 2s2 2p3" },
+            { z: 8, sym: "O", name: "Oxygen", full: "1s2 2s2 2p4", short: "[He] 2s2 2p4" },
+            { z: 9, sym: "F", name: "Fluorine", full: "1s2 2s2 2p5", short: "[He] 2s2 2p5" },
+            { z: 10, sym: "Ne", name: "Neon", full: "1s2 2s2 2p6", short: "[He] 2s2 2p6" },
+            { z: 11, sym: "Na", name: "Sodium", full: "1s2 2s2 2p6 3s1", short: "[Ne] 3s1" },
+            { z: 12, sym: "Mg", name: "Magnesium", full: "1s2 2s2 2p6 3s2", short: "[Ne] 3s2" },
+            { z: 13, sym: "Al", name: "Aluminum", full: "1s2 2s2 2p6 3s2 3p1", short: "[Ne] 3s2 3p1" },
+            { z: 14, sym: "Si", name: "Silicon", full: "1s2 2s2 2p6 3s2 3p2", short: "[Ne] 3s2 3p2" },
+            { z: 15, sym: "P", name: "Phosphorus", full: "1s2 2s2 2p6 3s2 3p3", short: "[Ne] 3s2 3p3" },
+            { z: 16, sym: "S", name: "Sulfur", full: "1s2 2s2 2p6 3s2 3p4", short: "[Ne] 3s2 3p4" },
+            { z: 17, sym: "Cl", name: "Chlorine", full: "1s2 2s2 2p6 3s2 3p5", short: "[Ne] 3s2 3p5" },
+            { z: 18, sym: "Ar", name: "Argon", full: "1s2 2s2 2p6 3s2 3p6", short: "[Ne] 3s2 3p6" },
+            { z: 19, sym: "K", name: "Potassium", full: "1s2 2s2 2p6 3s2 3p6 4s1", short: "[Ar] 4s1" },
+            { z: 20, sym: "Ca", name: "Calcium", full: "1s2 2s2 2p6 3s2 3p6 4s2", short: "[Ar] 4s2" }
+        ];
+
+        // --- State ---
+        let currentElement = null;
+        let streak = 0;
+
+        // --- DOM Elements ---
+        const ui = {
+            symbol: document.getElementById('element-symbol'),
+            name: document.getElementById('element-name'),
+            atomic: document.getElementById('atomic-number'),
+            inputFull: document.getElementById('input-full'),
+            inputShort: document.getElementById('input-short'),
+            previewFull: document.getElementById('preview-full'),
+            previewShort: document.getElementById('preview-short'),
+            feedback: document.getElementById('feedback-area'),
+            streak: document.getElementById('streak-count'),
+            status: document.getElementById('status-text')
+        };
+
+        // --- Display Formatting Helper ---
+        // Converts "1s2 2s2" -> "1s<sup>2</sup> 2s<sup>2</sup>" for display
+        function formatConfigHTML(text) {
+            if (!text) return '';
+            // Regex: find s, p, d, or f followed immediately by digits
+            // Replace the digits with <sup>digits</sup>
+            return text.replace(/([spdf])(\d+)/gi, '$1<sup>$2</sup>');
+        }
+
+        // --- Live Preview Listeners ---
+        ui.inputFull.addEventListener('input', (e) => {
+            ui.previewFull.innerHTML = formatConfigHTML(e.target.value);
+        });
+        ui.inputShort.addEventListener('input', (e) => {
+            ui.previewShort.innerHTML = formatConfigHTML(e.target.value);
+        });
+
+        // --- Utilities ---
+        
+        // Normalize string: removes spaces, lowercase, converts unicode superscripts to numbers
+        const normalize = (str) => {
+            let normalized = str.replace(/\s+/g, '').toLowerCase();
+            // Map common unicode superscripts to normal digits just in case user types them
+            const superscripts = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+            return normalized.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, match => superscripts[match]);
+        };
+
+        const getRandomElement = () => elementData[Math.floor(Math.random() * elementData.length)];
+
+        // --- Core Logic ---
+
+        function nextElement() {
+            // Pick new element
+            let next = getRandomElement();
+            while(currentElement && next.z === currentElement.z && elementData.length > 1) {
+                next = getRandomElement();
+            }
+            currentElement = next;
+
+            // Render
+            ui.symbol.textContent = currentElement.sym;
+            ui.name.textContent = currentElement.name;
+            ui.atomic.textContent = `Z=${currentElement.z}`;
+
+            // Reset Inputs & Previews
+            ui.inputFull.value = '';
+            ui.inputShort.value = '';
+            ui.previewFull.innerHTML = '';
+            ui.previewShort.innerHTML = '';
+            
+            // Reset UI States
+            ui.feedback.className = 'hidden p-4 rounded-lg bg-gray-100 text-center text-sm font-semibold config-preview';
+            ui.inputFull.classList.remove('border-green-500', 'border-red-500', 'bg-green-50', 'bg-red-50');
+            ui.inputShort.classList.remove('border-green-500', 'border-red-500', 'bg-green-50', 'bg-red-50');
+            ui.inputFull.disabled = false;
+            ui.inputShort.disabled = false;
+            ui.status.textContent = 'Playing...';
+            
+            // Focus first input
+            ui.inputFull.focus();
+        }
+
+        function checkAnswer() {
+            if(!currentElement) return;
+
+            const userFull = normalize(ui.inputFull.value);
+            const userShort = normalize(ui.inputShort.value);
+            const actualFull = normalize(currentElement.full);
+            const actualShort = normalize(currentElement.short);
+
+            const isFullCorrect = userFull === actualFull;
+            const isShortCorrect = userShort === actualShort;
+
+            // Update Input Styling
+            styleInput(ui.inputFull, isFullCorrect);
+            styleInput(ui.inputShort, isShortCorrect);
+
+            if (isFullCorrect && isShortCorrect) {
+                handleSuccess();
+            } else {
+                handleFailure(isFullCorrect, isShortCorrect);
+            }
+        }
+
+        function styleInput(el, isCorrect) {
+            el.classList.remove('border-gray-300', 'border-red-500', 'border-green-500', 'bg-red-50', 'bg-green-50');
+            if(isCorrect) {
+                el.classList.add('border-green-500', 'bg-green-50');
+            } else {
+                el.classList.add('border-red-500', 'bg-red-50');
+            }
+        }
+
+        function handleSuccess() {
+            streak++;
+            ui.streak.textContent = streak;
+            ui.status.textContent = 'Correct';
+            
+            ui.feedback.innerHTML = `Correct! It is ${currentElement.name}.`;
+            ui.feedback.className = 'block p-4 rounded-lg bg-green-100 text-green-800 text-center font-bold border border-green-200 config-preview';
+            
+            ui.inputFull.disabled = true;
+            ui.inputShort.disabled = true;
+        }
+
+        function handleFailure(fullOk, shortOk) {
+            streak = 0;
+            ui.streak.textContent = streak;
+            ui.status.textContent = 'Incorrect';
+
+            let msg = "Check your work:<br>";
+            if (!fullOk) msg += " Full config is wrong.<br>";
+            if (!shortOk) msg += " Shorthand is wrong.";
+            
+            ui.feedback.innerHTML = msg;
+            ui.feedback.className = 'block p-4 rounded-lg bg-red-100 text-red-800 text-center font-bold border border-red-200 shake config-preview';
+            
+            setTimeout(() => {
+                ui.feedback.classList.remove('shake');
+            }, 500);
+        }
+
+        function showAnswer() {
+            if(!currentElement) return;
+            
+            ui.inputFull.value = currentElement.full;
+            ui.inputShort.value = currentElement.short;
+            
+            // Trigger preview update manually
+            ui.previewFull.innerHTML = formatConfigHTML(currentElement.full);
+            ui.previewShort.innerHTML = formatConfigHTML(currentElement.short);
+            
+            ui.feedback.innerHTML = `
+                <div class="text-gray-600 mb-1">Answers for ${currentElement.name}:</div>
+                <div class="text-lg">${formatConfigHTML(currentElement.full)}</div>
+                <div class="text-lg">${formatConfigHTML(currentElement.short)}</div>
+            `;
+            ui.feedback.className = 'block p-4 rounded-lg bg-yellow-50 text-yellow-800 text-center border border-yellow-200 config-preview';
+            
+            streak = 0;
+            ui.streak.textContent = streak;
+            ui.status.textContent = 'Revealed';
+        }
+
+        // Initialize
+        nextElement();
+
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+    </script>
+</body>
+</html>
